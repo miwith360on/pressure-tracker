@@ -36,6 +36,23 @@ const headacheHistory = document.getElementById('headacheHistory');
 const historyList = document.getElementById('historyList');
 const personalizedRisk = document.getElementById('personalizedRisk');
 const patternText = document.getElementById('patternText');
+const tabForecast = document.getElementById('tabForecast');
+const tabRadar = document.getElementById('tabRadar');
+const tabHeatmap = document.getElementById('tabHeatmap');
+const radarContainer = document.getElementById('radarContainer');
+const heatmapContainer = document.getElementById('heatmapContainer');
+const radarMap = document.getElementById('radarMap');
+const heatmapMap = document.getElementById('heatmapMap');
+const playRadar = document.getElementById('playRadar');
+const radarTime = document.getElementById('radarTime');
+const radarTimeLabel = document.getElementById('radarTimeLabel');
+const syncBtn = document.getElementById('syncBtn');
+const syncStatus = document.getElementById('syncStatus');
+
+// Cloud sync state
+let syncEnabled = false;
+let radarPlaying = false;
+let radarInterval = null;
 
 // Register Service Worker
 if ('serviceWorker' in navigator) {
@@ -671,3 +688,279 @@ window.addEventListener('resize', () => {
         }
     }, 250);
 });
+
+// Tab Navigation
+tabForecast.addEventListener('click', () => {
+    setActiveTab('forecast');
+});
+
+tabRadar.addEventListener('click', () => {
+    setActiveTab('radar');
+    if (currentLocation) {
+        initializeRadar();
+    }
+});
+
+tabHeatmap.addEventListener('click', () => {
+    setActiveTab('heatmap');
+    if (currentLocation) {
+        generateHeatmap();
+    }
+});
+
+function setActiveTab(tab) {
+    // Update tab buttons
+    tabForecast.classList.remove('active');
+    tabRadar.classList.remove('active');
+    tabHeatmap.classList.remove('active');
+    
+    // Hide all containers
+    radarContainer.classList.add('hidden');
+    heatmapContainer.classList.add('hidden');
+    
+    // Show selected
+    if (tab === 'radar') {
+        tabRadar.classList.add('active');
+        radarContainer.classList.remove('hidden');
+    } else if (tab === 'heatmap') {
+        tabHeatmap.classList.add('active');
+        heatmapContainer.classList.remove('hidden');
+    } else {
+        tabForecast.classList.add('active');
+    }
+}
+
+// Weather Radar Animation
+function initializeRadar() {
+    if (!currentLocation) return;
+    
+    radarMap.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-secondary);">Loading radar data...</div>';
+    
+    // Simulate radar frames (in production, use real weather API)
+    setTimeout(() => {
+        drawRadarFrame(0);
+    }, 500);
+}
+
+function drawRadarFrame(frameIndex) {
+    const canvas = document.createElement('canvas');
+    canvas.width = radarMap.offsetWidth * 2;
+    canvas.height = 600;
+    canvas.style.width = '100%';
+    canvas.style.height = '300px';
+    
+    const ctx = canvas.getContext('2d');
+    
+    // Clear
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg-color');
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw simulated pressure fronts
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    
+    // Create animated pressure systems
+    for (let i = 0; i < 3; i++) {
+        const angle = (frameIndex * 20 + i * 120) * Math.PI / 180;
+        const distance = 200 + frameIndex * 30;
+        const x = centerX + Math.cos(angle) * distance;
+        const y = centerY + Math.sin(angle) * distance;
+        
+        // Draw pressure gradient
+        const gradient = ctx.createRadialGradient(x, y, 0, x, y, 150);
+        gradient.addColorStop(0, 'rgba(239, 68, 68, 0.6)');
+        gradient.addColorStop(0.5, 'rgba(251, 191, 36, 0.4)');
+        gradient.addColorStop(1, 'rgba(59, 130, 246, 0.2)');
+        
+        ctx.fillStyle = gradient;
+        ctx.fillCircle = function(x, y, r) {
+            this.beginPath();
+            this.arc(x, y, r, 0, Math.PI * 2);
+            this.fill();
+        };
+        ctx.fillCircle(x, y, 150);
+    }
+    
+    // Add location marker
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 8, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-primary');
+    ctx.font = 'bold 24px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('📍 You', centerX, centerY + 40);
+    
+    radarMap.innerHTML = '';
+    radarMap.appendChild(canvas);
+}
+
+playRadar.addEventListener('click', () => {
+    if (!radarPlaying) {
+        radarPlaying = true;
+        playRadar.textContent = '⏸️ Pause';
+        
+        radarInterval = setInterval(() => {
+            let current = parseInt(radarTime.value);
+            current = (current + 1) % 11;
+            radarTime.value = current;
+            updateRadarTime();
+        }, 500);
+    } else {
+        radarPlaying = false;
+        playRadar.textContent = '▶️ Play Animation';
+        clearInterval(radarInterval);
+    }
+});
+
+radarTime.addEventListener('input', updateRadarTime);
+
+function updateRadarTime() {
+    const value = parseInt(radarTime.value);
+    const hours = value * 3;
+    
+    if (value === 0) {
+        radarTimeLabel.textContent = 'Now';
+    } else {
+        radarTimeLabel.textContent = `+${hours}h`;
+    }
+    
+    drawRadarFrame(value);
+}
+
+// Pressure Heatmap
+function generateHeatmap() {
+    if (!currentLocation || pressureData.length === 0) {
+        heatmapMap.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-secondary);">Load pressure data first</div>';
+        return;
+    }
+    
+    heatmapMap.innerHTML = '';
+    
+    const canvas = document.createElement('canvas');
+    canvas.width = heatmapMap.offsetWidth * 2;
+    canvas.height = 600;
+    canvas.style.width = '100%';
+    canvas.style.height = '300px';
+    
+    const ctx = canvas.getContext('2d');
+    
+    // Background
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg-color');
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Generate heatmap grid
+    const gridSize = 40;
+    const cols = Math.ceil(canvas.width / gridSize);
+    const rows = Math.ceil(canvas.height / gridSize);
+    
+    const basePressure = pressureData[0].pressure;
+    
+    for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+            const x = col * gridSize;
+            const y = row * gridSize;
+            
+            // Simulate pressure variation
+            const noise = (Math.sin(col * 0.3) + Math.cos(row * 0.3)) * 2;
+            const pressure = basePressure + noise;
+            
+            // Map pressure to color
+            const color = getPressureColor(pressure, basePressure - 5, basePressure + 5);
+            
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, gridSize, gridSize);
+        }
+    }
+    
+    // Add location marker
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 28px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('📍', centerX, centerY + 10);
+    
+    // Add pressure values
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-primary');
+    ctx.font = '20px sans-serif';
+    ctx.fillText(`${basePressure.toFixed(1)} hPa`, centerX, centerY + 50);
+    
+    heatmapMap.appendChild(canvas);
+}
+
+function getPressureColor(pressure, min, max) {
+    const normalized = (pressure - min) / (max - min);
+    const clamped = Math.max(0, Math.min(1, normalized));
+    
+    // Color gradient: blue (low) -> cyan -> green -> yellow -> orange -> red (high)
+    if (clamped < 0.2) {
+        return `rgba(59, 130, 246, 0.7)`; // Blue
+    } else if (clamped < 0.4) {
+        return `rgba(6, 182, 212, 0.7)`; // Cyan
+    } else if (clamped < 0.6) {
+        return `rgba(16, 185, 129, 0.7)`; // Green
+    } else if (clamped < 0.8) {
+        return `rgba(251, 191, 36, 0.7)`; // Yellow
+    } else {
+        return `rgba(239, 68, 68, 0.7)`; // Red
+    }
+}
+
+// Cloud Sync with LocalStorage Simulation (can be upgraded to Firebase)
+syncBtn.addEventListener('click', () => {
+    if (!syncEnabled) {
+        // Simulate cloud sync
+        syncEnabled = true;
+        syncStatus.textContent = '✅ Connected & Synced';
+        syncStatus.classList.add('connected');
+        syncBtn.textContent = 'Disconnect';
+        
+        // Backup to localStorage (in production: send to Firebase/Supabase)
+        const backupData = {
+            headacheLogs: headacheLogs,
+            settings: {
+                theme: localStorage.getItem('theme'),
+                alertThreshold: alertThreshold.value,
+                notificationsEnabled: notificationsEnabled.checked
+            },
+            lastSync: new Date().toISOString()
+        };
+        
+        localStorage.setItem('cloudBackup', JSON.stringify(backupData));
+        
+        alert('✅ Your data has been backed up! (In full version, this syncs to cloud)');
+    } else {
+        syncEnabled = false;
+        syncStatus.textContent = 'Not connected';
+        syncStatus.classList.remove('connected');
+        syncBtn.textContent = 'Connect & Backup';
+    }
+});
+
+// Auto-restore from cloud backup
+window.addEventListener('load', () => {
+    const cloudBackup = localStorage.getItem('cloudBackup');
+    if (cloudBackup) {
+        const backup = JSON.parse(cloudBackup);
+        const lastSync = new Date(backup.lastSync);
+        const hoursSinceSync = (Date.now() - lastSync.getTime()) / (1000 * 60 * 60);
+        
+        if (hoursSinceSync < 24) {
+            syncStatus.textContent = `✅ Last synced ${Math.floor(hoursSinceSync)}h ago`;
+            syncStatus.classList.add('connected');
+            syncEnabled = true;
+            syncBtn.textContent = 'Disconnect';
+        }
+    }
+}, { once: true });

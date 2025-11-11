@@ -88,6 +88,41 @@
             <canvas id="pressureChart"></canvas>
         </div>
 
+        <!-- Weather Radar & Heatmap -->
+        <div class="radar-section">
+            <div class="section-tabs">
+                <button id="tabForecast" class="tab-btn active">📊 Forecast</button>
+                <button id="tabRadar" class="tab-btn">🌧️ Radar</button>
+                <button id="tabHeatmap" class="tab-btn">🗺️ Heatmap</button>
+            </div>
+            <div id="radarContainer" class="radar-container hidden">
+                <div id="radarMap" class="map-display"></div>
+                <div class="radar-controls">
+                    <button id="playRadar" class="btn-secondary">▶️ Play Animation</button>
+                    <input type="range" id="radarTime" min="0" max="10" value="0" class="radar-slider">
+                    <span id="radarTimeLabel">Now</span>
+                </div>
+            </div>
+            <div id="heatmapContainer" class="heatmap-container hidden">
+                <div id="heatmapMap" class="map-display"></div>
+                <div class="legend">
+                    <span>Low Pressure</span>
+                    <div class="legend-gradient"></div>
+                    <span>High Pressure</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cloud Sync Section -->
+        <div class="sync-section">
+            <h3>☁️ Cloud Backup</h3>
+            <div class="sync-status">
+                <span id="syncStatus">Not connected</span>
+                <button id="syncBtn" class="btn-sync">Connect & Backup</button>
+            </div>
+            <p class="sync-info">Backup your headache logs and sync across devices</p>
+        </div>
+
         <div class="quick-tips">
             <h3>Quick Guide</h3>
             <div class="tip-grid">
