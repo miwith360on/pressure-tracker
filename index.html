@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Track barometric pressure changes to prevent sinus headaches">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Pressure">
+    <title>Pressure Tracker - Sinus Headache Prevention</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+</head>
+<body>
+    <div class="container">
+        <!-- Install PWA Banner -->
+        <div id="installBanner" class="install-banner hidden">
+            <div class="install-content">
+                <span>📱 Install app for quick access</span>
+                <button id="installBtn" class="install-btn">Install</button>
+                <button id="dismissBtn" class="dismiss-btn">✕</button>
+            </div>
+        </div>
+
+        <header>
+            <h1>💨 Pressure Tracker</h1>
+            <p class="subtitle">Stay ahead of sinus headaches</p>
+        </header>
+
+        <div class="location-section">
+            <input type="text" id="locationInput" placeholder="Enter your city..." autocomplete="off">
+            <button id="searchBtn" class="btn-primary">Search</button>
+            <button id="geoBtn" class="btn-geo">📍 My Location</button>
+        </div>
+
+        <div id="alertBox" class="alert-box hidden">
+            <div class="alert-icon">⚠️</div>
+            <div class="alert-content">
+                <h3>Headache Risk Alert</h3>
+                <p id="alertMessage"></p>
+            </div>
+        </div>
+
+        <div class="status-section">
+            <div class="status-card">
+                <div class="status-label">Current Pressure</div>
+                <div class="status-value" id="currentPressure">--</div>
+                <div class="status-unit">hPa (mb)</div>
+            </div>
+            <div class="status-card">
+                <div class="status-label">3-Hour Change</div>
+                <div class="status-value trend" id="pressureTrend">--</div>
+                <div class="status-unit">hPa</div>
+            </div>
+            <div class="status-card">
+                <div class="status-label">Risk Level</div>
+                <div class="status-value" id="riskLevel">--</div>
+                <div class="status-unit" id="riskText">Calculating...</div>
+            </div>
+        </div>
+
+        <div class="chart-section">
+            <h2>48-Hour Pressure Forecast</h2>
+            <canvas id="pressureChart"></canvas>
+        </div>
+
+        <div class="quick-tips">
+            <h3>Quick Guide</h3>
+            <div class="tip-grid">
+                <div class="tip">📉 <strong>Drops >3 hPa</strong> often trigger headaches</div>
+                <div class="tip">📊 <strong>Watch the graph</strong> to plan ahead</div>
+                <div class="tip">🔔 <strong>Enable alerts</strong> for early warnings</div>
+                <div class="tip">⏰ <strong>Check twice daily</strong> for best results</div>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h3>⚙️ Settings</h3>
+            <div class="setting-item">
+                <label for="alertThreshold">Alert when pressure drops by:</label>
+                <select id="alertThreshold">
+                    <option value="2">2 hPa (High sensitivity)</option>
+                    <option value="3" selected>3 hPa (Normal)</option>
+                    <option value="4">4 hPa (Low sensitivity)</option>
+                    <option value="5">5 hPa (Very low)</option>
+                </select>
+            </div>
+            <div class="setting-item">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="notificationsEnabled">
+                    <span>Enable browser notifications</span>
+                </label>
+            </div>
+        </div>
+
+        <footer>
+            <p>Last updated: <span id="lastUpdate">Never</span></p>
+            <p class="disclaimer">Data from OpenWeatherMap. Consult your doctor for medical advice.</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
