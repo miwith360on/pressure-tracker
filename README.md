@@ -1,8 +1,8 @@
-# 💨 Pressure Tracker - PWA for Sinus Headache Prevention
+# 💨 Pressure Tracker - Advanced PWA for Sinus Headache Prevention
 
-A mobile-friendly Progressive Web App (PWA) designed to help track barometric pressure changes and predict sinus headaches before they happen. **Install it on your phone like a native app!**
+A cutting-edge Progressive Web App (PWA) with AI-powered predictions, visual radar, pressure heatmaps, and cloud sync. **Install it on your phone like a native app!**
 
-## ✨ Key Features
+## ✨ Core Features
 
 **Headache Prevention:**
 - 🚨 **Smart Alerts** - Warns 24-48 hours before dangerous pressure drops
@@ -11,12 +11,25 @@ A mobile-friendly Progressive Web App (PWA) designed to help track barometric pr
 - ⚡ **Risk Assessment** - Clear Low/Moderate/High indicators
 - 🔔 **Push Notifications** - Alerts even when app is closed
 
+**Advanced AI & Tracking:**
+- 🤖 **Smart Predictions** - Machine learning analyzes YOUR personal headache patterns
+- 📝 **Headache Logging** - Track when headaches occur with one tap
+- 🧠 **Pattern Recognition** - Learns your unique triggers (falling/rising pressure, low systems, rapid changes)
+- 📊 **Personalized Risk** - After 3+ logs, risk alerts adapt to YOUR sensitivity
+
+**Visual Insights:**
+- 🗺️ **Pressure Heatmap** - Color-coded map showing pressure zones in your area
+- 🌧️ **Weather Radar** - Animated visualization of pressure systems moving toward you
+- ⏱️ **Time Controls** - Play/pause and scrub through 30-hour forecast
+- 🎨 **Dark Mode** - Easy on eyes during migraines or nighttime checking
+
 **Mobile Optimized:**
 - 📱 **Install as App** - Add to home screen, works like native app
-- 🔄 **Works Offline** - View last data without internet
+- ☁️ **Cloud Sync** - Backup headache logs, never lose data
+- � **Barometer Sensor** - Uses phone's built-in sensor for ultra-accurate readings
+- �🔄 **Works Offline** - View last data without internet
 - 👆 **Touch-Friendly** - Large buttons, swipe-friendly interface
 - ⚡ **Fast & Lightweight** - Loads instantly
-- 🎨 **Clean Design** - Easy to read at a glance
 
 ## 📱 Installation on Phone
 
