@@ -7,6 +7,9 @@ let currentLocation = null;
 let pressureData = [];
 let chartInstance = null;
 let deferredPrompt = null;
+let sensorPressure = null;
+let headacheLogs = JSON.parse(localStorage.getItem('headacheLogs')) || [];
+let usingSensor = false;
 
 // DOM Elements
 const locationInput = document.getElementById('locationInput');
@@ -25,6 +28,14 @@ const canvas = document.getElementById('pressureChart');
 const installBanner = document.getElementById('installBanner');
 const installBtn = document.getElementById('installBtn');
 const dismissBtn = document.getElementById('dismissBtn');
+const darkModeToggle = document.getElementById('darkModeToggle');
+const sensorBadge = document.getElementById('sensorBadge');
+const logHeadacheBtn = document.getElementById('logHeadacheBtn');
+const viewHistoryBtn = document.getElementById('viewHistoryBtn');
+const headacheHistory = document.getElementById('headacheHistory');
+const historyList = document.getElementById('historyList');
+const personalizedRisk = document.getElementById('personalizedRisk');
+const patternText = document.getElementById('patternText');
 
 // Register Service Worker
 if ('serviceWorker' in navigator) {
@@ -33,6 +44,27 @@ if ('serviceWorker' in navigator) {
             .then(reg => console.log('Service Worker registered'))
             .catch(err => console.log('Service Worker registration failed:', err));
     });
+}
+
+// Initialize Barometer Sensor (if available)
+if ('AbsolutePressureSensor' in window || 'Sensor' in window) {
+    try {
+        if ('AbsolutePressureSensor' in window) {
+            const sensor = new AbsolutePressureSensor({ frequency: 1 });
+            sensor.addEventListener('reading', () => {
+                sensorPressure = sensor.pressure / 100; // Convert Pa to hPa
+                usingSensor = true;
+                sensorBadge.textContent = '📱 Using device sensor';
+            });
+            sensor.addEventListener('error', (e) => {
+                console.log('Sensor error:', e);
+                usingSensor = false;
+            });
+            sensor.start();
+        }
+    } catch (error) {
+        console.log('Barometer sensor not available:', error);
+    }
 }
 
 // PWA Install Prompt
@@ -59,6 +91,131 @@ installBtn.addEventListener('click', async () => {
 dismissBtn.addEventListener('click', () => {
     installBanner.classList.add('hidden');
 });
+
+// Dark Mode Toggle
+darkModeToggle.addEventListener('click', () => {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    
+    darkModeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+});
+
+// Load saved theme
+const savedTheme = localStorage.getItem('theme') || 'light';
+document.documentElement.setAttribute('data-theme', savedTheme);
+darkModeToggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+
+// Headache Logging
+logHeadacheBtn.addEventListener('click', () => {
+    const now = new Date();
+    const currentPressureValue = parseFloat(currentPressure.textContent);
+    
+    if (isNaN(currentPressureValue)) {
+        alert('Please load pressure data first by searching for your location.');
+        return;
+    }
+    
+    const log = {
+        timestamp: now.toISOString(),
+        pressure: currentPressureValue,
+        change: parseFloat(pressureTrend.textContent) || 0,
+        location: currentLocation || 'Unknown'
+    };
+    
+    headacheLogs.unshift(log);
+    localStorage.setItem('headacheLogs', JSON.stringify(headacheLogs));
+    
+    updateHeadacheHistory();
+    analyzePersonalPattern();
+    
+    logHeadacheBtn.textContent = '✅ Logged!';
+    setTimeout(() => {
+        logHeadacheBtn.textContent = 'I Have a Headache Now';
+    }, 2000);
+});
+
+viewHistoryBtn.addEventListener('click', () => {
+    headacheHistory.classList.toggle('hidden');
+    viewHistoryBtn.textContent = headacheHistory.classList.contains('hidden') 
+        ? 'View History' 
+        : 'Hide History';
+    updateHeadacheHistory();
+});
+
+function updateHeadacheHistory() {
+    historyList.innerHTML = '';
+    
+    if (headacheLogs.length === 0) {
+        historyList.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 20px;">No headaches logged yet. Tap "I Have a Headache Now" when one occurs.</p>';
+        return;
+    }
+    
+    headacheLogs.slice(0, 10).forEach((log, index) => {
+        const date = new Date(log.timestamp);
+        const item = document.createElement('div');
+        item.className = 'history-item';
+        item.innerHTML = `
+            <div>
+                <div class="date">${date.toLocaleDateString()} ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                <div class="pressure-info">${log.pressure.toFixed(1)} hPa | Change: ${log.change >= 0 ? '+' : ''}${log.change.toFixed(1)} hPa</div>
+            </div>
+            <button class="delete-btn" onclick="deleteHeadacheLog(${index})">🗑️</button>
+        `;
+        historyList.appendChild(item);
+    });
+}
+
+function deleteHeadacheLog(index) {
+    headacheLogs.splice(index, 1);
+    localStorage.setItem('headacheLogs', JSON.stringify(headacheLogs));
+    updateHeadacheHistory();
+    analyzePersonalPattern();
+}
+
+// Smart Predictions - Analyze Personal Pattern
+function analyzePersonalPattern() {
+    if (headacheLogs.length < 3) {
+        personalizedRisk.classList.add('hidden');
+        return;
+    }
+    
+    // Calculate average pressure and change during headaches
+    const avgPressure = headacheLogs.reduce((sum, log) => sum + log.pressure, 0) / headacheLogs.length;
+    const avgChange = headacheLogs.reduce((sum, log) => sum + log.change, 0) / headacheLogs.length;
+    
+    // Find patterns
+    const droppingCount = headacheLogs.filter(log => log.change < -1).length;
+    const risingCount = headacheLogs.filter(log => log.change > 1).length;
+    const lowPressureCount = headacheLogs.filter(log => log.pressure < 1010).length;
+    const highPressureCount = headacheLogs.filter(log => log.pressure > 1020).length;
+    
+    let pattern = '';
+    
+    if (droppingCount > headacheLogs.length * 0.6) {
+        pattern = `You tend to get headaches when pressure is falling (${droppingCount} of ${headacheLogs.length} logged). Watch for drops of ${Math.abs(avgChange).toFixed(1)}+ hPa.`;
+    } else if (risingCount > headacheLogs.length * 0.5) {
+        pattern = `Interesting! You seem sensitive to rising pressure (${risingCount} of ${headacheLogs.length}). This is less common.`;
+    } else if (lowPressureCount > headacheLogs.length * 0.6) {
+        pattern = `You're most affected by low pressure systems (<1010 hPa). ${lowPressureCount} of your logged headaches occurred during low pressure.`;
+    } else if (Math.abs(avgChange) > 2) {
+        pattern = `Rapid pressure changes trigger your headaches (avg ${avgChange.toFixed(1)} hPa). Any change >3 hPa warrants caution.`;
+    } else {
+        pattern = `After ${headacheLogs.length} logs, your average trigger: ${avgPressure.toFixed(1)} hPa with ${avgChange.toFixed(1)} hPa change. Keep logging to refine!`;
+    }
+    
+    patternText.textContent = pattern;
+    personalizedRisk.classList.remove('hidden');
+    
+    // Save pattern for use in risk analysis
+    localStorage.setItem('personalPattern', JSON.stringify({
+        avgPressure,
+        avgChange,
+        sensitivity: Math.abs(avgChange)
+    }));
+}
 
 // Hide install banner if already installed
 window.addEventListener('appinstalled', () => {
@@ -216,7 +373,14 @@ function processWeatherData(current, forecast) {
 
 // Update current pressure display
 function updateCurrentPressure(pressure) {
-    currentPressure.textContent = pressure.toFixed(1);
+    // Use sensor data if available and recent
+    if (usingSensor && sensorPressure) {
+        currentPressure.textContent = sensorPressure.toFixed(1);
+        sensorBadge.textContent = '📱 Device sensor';
+    } else {
+        currentPressure.textContent = pressure.toFixed(1);
+        sensorBadge.textContent = '';
+    }
 }
 
 // Calculate and update pressure trend
@@ -244,6 +408,16 @@ function updateTrend() {
 // Analyze headache risk
 function analyzeRisk() {
     const threshold = parseFloat(alertThreshold.value);
+    
+    // Check if user has personal pattern
+    const personalPattern = JSON.parse(localStorage.getItem('personalPattern'));
+    let adjustedThreshold = threshold;
+    
+    if (personalPattern && headacheLogs.length >= 5) {
+        // Use personalized sensitivity
+        adjustedThreshold = personalPattern.sensitivity || threshold;
+    }
+    
     let maxDrop = 0;
     let riskPeriod = null;
     
@@ -259,14 +433,14 @@ function analyzeRisk() {
         }
     }
     
-    // Update risk level
-    if (maxDrop >= threshold) {
+    // Update risk level with personalized context
+    if (maxDrop >= adjustedThreshold) {
         riskLevel.textContent = '⚠️';
         riskLevel.style.fontSize = '2rem';
-        riskText.textContent = 'High Risk';
+        riskText.textContent = personalPattern ? 'High Risk (Personalized)' : 'High Risk';
         riskText.style.color = 'var(--danger-color)';
         showAlert(maxDrop, riskPeriod);
-    } else if (maxDrop >= threshold * 0.7) {
+    } else if (maxDrop >= adjustedThreshold * 0.7) {
         riskLevel.textContent = '⚡';
         riskLevel.style.fontSize = '2rem';
         riskText.textContent = 'Moderate';
@@ -458,6 +632,11 @@ setInterval(() => {
 window.addEventListener('load', () => {
     const savedData = localStorage.getItem('lastPressureData');
     const savedLocation = localStorage.getItem('lastLocation');
+    
+    // Initialize headache history if exists
+    if (headacheLogs.length > 0) {
+        analyzePersonalPattern();
+    }
     
     if (savedData && savedLocation) {
         pressureData = JSON.parse(savedData);

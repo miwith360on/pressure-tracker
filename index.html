@@ -25,8 +25,13 @@
         </div>
 
         <header>
-            <h1>💨 Pressure Tracker</h1>
-            <p class="subtitle">Stay ahead of sinus headaches</p>
+            <div class="header-top">
+                <div>
+                    <h1>💨 Pressure Tracker</h1>
+                    <p class="subtitle">Stay ahead of sinus headaches</p>
+                </div>
+                <button id="darkModeToggle" class="icon-btn" title="Toggle dark mode">🌙</button>
+            </div>
         </header>
 
         <div class="location-section">
@@ -48,6 +53,7 @@
                 <div class="status-label">Current Pressure</div>
                 <div class="status-value" id="currentPressure">--</div>
                 <div class="status-unit">hPa (mb)</div>
+                <div class="sensor-badge" id="sensorBadge"></div>
             </div>
             <div class="status-card">
                 <div class="status-label">3-Hour Change</div>
@@ -58,6 +64,22 @@
                 <div class="status-label">Risk Level</div>
                 <div class="status-value" id="riskLevel">--</div>
                 <div class="status-unit" id="riskText">Calculating...</div>
+            </div>
+        </div>
+
+        <!-- Headache Logging -->
+        <div class="headache-section">
+            <h3>📝 Track Your Headaches</h3>
+            <div class="headache-controls">
+                <button id="logHeadacheBtn" class="btn-headache">I Have a Headache Now</button>
+                <button id="viewHistoryBtn" class="btn-secondary">View History</button>
+            </div>
+            <div id="headacheHistory" class="headache-history hidden">
+                <div class="history-list" id="historyList"></div>
+            </div>
+            <div id="personalizedRisk" class="personalized-risk hidden">
+                <h4>🤖 Your Personal Pattern</h4>
+                <p id="patternText"></p>
             </div>
         </div>
 
